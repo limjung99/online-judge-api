@@ -11,12 +11,18 @@ def get_index():
 
 @app.post("/test/{test_id}")
 def test_input(test_id:int,src:str,test_manager:TestManager = Depends(get_test_manager)):
-    test_output = TestOutput()
-    if test_manager.run_test(test_id,src):
-        test_output.is_right = True
+    # TODO
+    # later change it test problem case by case ;;
+    with open("app/resources/inputs/input1.txt") as f:
+        test_input = f.read()
+
+    with open("app/resources/outputs/output1.txt") as f:
+        test_output = f.read()
+
+    if test_manager.run_test(src,test_input,test_output):
+        return True
     else:
-        test_output.is_right = False
-    return test_output
+        return False
 
 
 
