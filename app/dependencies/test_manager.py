@@ -1,11 +1,8 @@
 import multiprocessing
-import os
-import subprocess
-import sys
-from multiprocessing import process, Process
+from multiprocessing import Process
 from pathlib import Path
 
-from models.test_model import TestResponse
+from app.models.test_model import TestResponse
 
 
 class TestManager:
@@ -25,25 +22,14 @@ class TestManager:
         # TODO : some logic check not allowed syscall
         return False
 
-    def execute_code_in_container(self, test_id: int) -> TestResponse:
-        # execute code in container
-        src_file = Path(f"~/projects/code-judge-server/app/resources/code/{test_id}.py")
-        err_file = Path(f"~/projects/code-judge-server/app/resources/error/{test_id}.txt")
-        input_file = Path(f"~/projects/code-judge-server/app/resources/input/input{test_id}.txt")
+    def execute_code_with_fork(self, test_id: int) -> TestResponse:
+        # execute codes in container
+        src_file = Path(f"app/resources/codes/{test_id}.py")
+        err_file = Path(f"app/resources/error/{test_id}.txt")
+        input_file = Path(f"app/resources/inputs/input{test_id}.txt")
+        output_file = Path(f"app/resources/outputs/output{test_id}.txt")
 
-        # output_file = f"resources/output/output{test_id}.txt"
-
-        # clojure
-        def run_code():
-            try:
-                with open(src_file, "r") as sf:
-                    code = sf.read()
-                    exec(code)
-            except Exception as e:
-                with open(err_file, "w") as errf:
-                    errf.write(str(e))
-
-        process: Process = multiprocessing.Process(target=run_code)
+        process: Process = multiprocessing.Process(target=self.run_code, args=(src_file, err_file))
         process.start()
         process.join(5)  # wait for 5 seconds
 
@@ -54,8 +40,16 @@ class TestManager:
         return TestResponse(is_right=True, test_id=test_id)
 
     def run_test(self, test_id: int) -> TestResponse:
-        return self.execute_code_in_container(test_id)
+        return self.execute_code_with_fork(test_id)
 
-
+    def run_code(self, src_file: Path, err_file: Path):
+        try:
+            with open(src_file, "r") as sf:
+                code = sf.read()
+                exec(code)
+        except Exception as e:
+            print(str(e))
+            with open(err_file, "w") as errf:
+                errf.write(str(e))
 def get_test_manager() -> TestManager:
     return TestManager()
